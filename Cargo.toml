@@ -1,0 +1,20 @@
+[package]
+name = "sidecar"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.81"
+askama = "0.12.1"
+axum = { version = "0.7.5", features = ["ws"] }
+base64 = "0.22.0"
+mime_guess = "2.0.4"
+notify = "6.1.1"
+pulldown-cmark = { git = "https://github.com/pulldown-cmark/pulldown-cmark", rev = "2540d4095d5f94fd972c93b927e9bec83b0c5079"}
+resolve-path = "0.1.0"
+serde = { version = "1.0.197", features = ["derive"] }
+tokio = { version = "1.37.0", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"

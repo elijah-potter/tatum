@@ -24,7 +24,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.get('path');
 
-    let socket = new WebSocket(`ws://${location.host}/watch?path=${path}`);
+    let socket = new WebSocket(`ws://${location.host}/watch?path=${encodeURI(path)}`);
     socket.onmessage = function (event) {
       console.log("Recieved Message");
       location.reload();

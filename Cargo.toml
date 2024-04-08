@@ -8,6 +8,7 @@ anyhow = "1.0.81"
 askama = "0.12.1"
 axum = { version = "0.7.5", features = ["ws"] }
 base64 = "0.22.0"
+clap = { version = "4.5.4", features = ["derive"] }
 mime_guess = "2.0.4"
 notify = "6.1.1"
 pulldown-cmark = { git = "https://github.com/pulldown-cmark/pulldown-cmark", rev = "2540d4095d5f94fd972c93b927e9bec83b0c5079"}

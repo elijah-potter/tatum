@@ -3,23 +3,41 @@ mod render;
 mod routes;
 mod svg_template;
 
+use clap::{command, Parser};
 use routes::construct_router;
-use std::env::args;
 use tracing::info;
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Whether to print logs.
+    /// If true, Tatum will exclusively print out the `address:port` of the listening server once it starts.
+    #[arg(short, long, default_value_t = false)]
+    quiet: bool,
+
+    #[arg(short, long, default_value_t = 0)]
+    port: u16,
+
+    #[arg(short, long, default_value_t = ("127.0.0.1".to_string()))]
+    address: String,
+}
 
 #[tokio::main]
 async fn main() {
-    let silent = args().into_iter().any(|v| v == "-q");
+    let args = Args::parse();
 
-    if !silent {
+    if !args.quiet {
         tracing_subscriber::fmt::init();
     }
 
     let app = construct_router();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = tokio::net::TcpListener::bind((args.address, args.port))
+        .await
+        .unwrap();
 
-    if silent {
+    if args.quiet {
         println!("{}", listener.local_addr().unwrap());
     } else {
         info!("Listening on {}", listener.local_addr().unwrap());

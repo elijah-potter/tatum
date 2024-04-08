@@ -19,7 +19,7 @@ struct Args {
     #[arg(short, long, default_value_t = 0)]
     port: u16,
 
-    #[arg(short, long, default_value_t = ("127.0.0.1".to_string()))]
+    #[arg(short, long, default_value_t = ("127.0.0.1").to_string())]
     address: String,
 }
 

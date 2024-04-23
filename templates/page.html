@@ -21,6 +21,8 @@
       }
     });
 
+    {% if use_websocket %}
+
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.get('path');
 
@@ -31,7 +33,7 @@
     }
 
     console.log(`Created websocket connection to listen for changes to ${path}.`);
-
+    {% endif %}
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

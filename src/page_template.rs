@@ -5,4 +5,5 @@ use askama::Template;
 pub struct PageTemplate {
     pub title: String,
     pub body: String,
+    pub use_websocket: bool,
 }

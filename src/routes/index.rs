@@ -15,5 +15,5 @@ pub struct IndexParams {
 pub async fn index(Query(IndexParams { path }): Query<IndexParams>) -> Html<String> {
     info!("Rendering document {}", path.to_string_lossy());
 
-    Html(render_doc(path.resolve()).await.unwrap())
+    Html(render_doc(path.resolve(), true).await.unwrap())
 }

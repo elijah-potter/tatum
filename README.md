@@ -21,6 +21,6 @@ vim.keymap.set("n", "<leader>o", function ()
     os.execute("xdg-open http://" .. data .. "?path=" .. vim.fn.expand('%'))
   end
 
-  vim.fn.jobstart('tatum -q', { on_stdout = handle_stdout })
+  vim.fn.jobstart('tatum serve -q', { on_stdout = handle_stdout })
 end, { noremap = true, silent = true })
 ```

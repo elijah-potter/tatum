@@ -1,10 +1,10 @@
 use crate::page_template::PageTemplate;
 use askama::Template;
 use base64::{engine::general_purpose, Engine};
-use pulldown_cmark::{CowStr, Event, LinkType, Tag};
+use pulldown_cmark::{Event, LinkType, Tag};
 use resolve_path::PathResolveExt;
 use std::path::{Path, PathBuf};
-use tracing::info;
+use url::Url;
 
 use tokio::fs::{read, read_to_string};
 
@@ -28,7 +28,24 @@ async fn path_to_data_url(path: impl AsRef<Path>) -> anyhow::Result<String> {
     ))
 }
 
-pub async fn render_doc(path: impl AsRef<Path>) -> anyhow::Result<String> {
+/// Generates an SVG image containing a message and serializes it to a data URL.
+fn generate_message_data_url(message: impl AsRef<str>, color: impl AsRef<str>) -> String {
+    data_url(
+        SvgTemplate {
+            fill: color.as_ref().to_string(),
+            text: message.as_ref().to_string(),
+        }
+        .to_string()
+        .as_bytes(),
+        "image/svg+xml",
+    )
+}
+
+/// Renders a file to an HTML string.
+///
+/// `use_websocket` determines whether to include code for automatically updating the document with a
+/// WebSocket connection.
+pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::Result<String> {
     let file = read_to_string(path.as_ref()).await?;
 
     let options = pulldown_cmark::Options::all();
@@ -37,7 +54,7 @@ pub async fn render_doc(path: impl AsRef<Path>) -> anyhow::Result<String> {
 
     let mut events: Vec<_> = parser.collect();
 
-    // Convert image links to base64
+    // Resolve image links asynchronously
     for event in events.iter_mut() {
         if let Event::Start(Tag::Image {
             link_type: LinkType::Inline,
@@ -45,24 +62,15 @@ pub async fn render_doc(path: impl AsRef<Path>) -> anyhow::Result<String> {
             ..
         }) = event
         {
-            let image_path: PathBuf = dest_url.parse()?;
-
-            let resolved = image_path.resolve_in(&path);
-
-            info!("Loading image {}", resolved.to_string_lossy());
-
-            if let Ok(data_url) = path_to_data_url(resolved).await {
-                *dest_url = CowStr::from(data_url);
+            if dest_url.parse::<Url>().is_ok() {
+                continue;
+            } else if let Ok(image_path) = dest_url.parse::<PathBuf>() {
+                *dest_url = path_to_data_url(image_path.resolve_in(&path))
+                    .await
+                    .unwrap_or(generate_message_data_url("Disk error.", "red"))
+                    .into()
             } else {
-                *dest_url = CowStr::from(data_url(
-                    SvgTemplate {
-                        fill: "red".to_string(),
-                        text: "Unable to embed image.".to_string(),
-                    }
-                    .to_string()
-                    .as_bytes(),
-                    "image/svg+xml",
-                ))
+                *dest_url = generate_message_data_url("Unable to parse image path.", "red").into();
             }
         }
     }
@@ -73,6 +81,7 @@ pub async fn render_doc(path: impl AsRef<Path>) -> anyhow::Result<String> {
     let template = PageTemplate {
         body,
         title: path.as_ref().as_os_str().to_string_lossy().to_string(),
+        use_websocket,
     };
 
     Ok(template.render().unwrap())

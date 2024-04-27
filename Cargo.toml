@@ -12,6 +12,7 @@ clap = { version = "4.5.4", features = ["derive"] }
 inquire = "0.7.5"
 mime_guess = "2.0.4"
 notify = "6.1.1"
+open = "5.1.2"
 pulldown-cmark = { git = "https://github.com/pulldown-cmark/pulldown-cmark", rev = "2540d4095d5f94fd972c93b927e9bec83b0c5079"}
 resolve-path = "0.1.0"
 serde = { version = "1.0.197", features = ["derive"] }

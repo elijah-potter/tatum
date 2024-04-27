@@ -46,7 +46,9 @@ fn generate_message_data_url(message: impl AsRef<str>, color: impl AsRef<str>) -
 /// `use_websocket` determines whether to include code for automatically updating the document with a
 /// WebSocket connection.
 pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::Result<String> {
-    let file = read_to_string(path.as_ref()).await?;
+    let path = path.as_ref().canonicalize()?;
+
+    let file = read_to_string(&path).await?;
 
     let options = pulldown_cmark::Options::all();
 
@@ -80,7 +82,7 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
 
     let template = PageTemplate {
         body,
-        title: path.as_ref().as_os_str().to_string_lossy().to_string(),
+        title: path.as_os_str().to_string_lossy().to_string(),
         use_websocket,
     };
 

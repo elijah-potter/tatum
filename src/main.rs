@@ -14,6 +14,7 @@ use tokio::{
     io::{AsyncWriteExt, BufWriter},
 };
 use tracing::info;
+use url::Url;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -33,10 +34,15 @@ enum Args {
         /// Which address to listen on.
         #[arg(short, long, default_value_t = ("127.0.0.1").to_string())]
         address: String,
+
+        /// Specify a file path to open in a browser.
+        #[arg(short, long)]
+        open: Option<PathBuf>,
     },
     Render {
         /// The location of the Markdown file to render.
         in_file: PathBuf,
+
         /// The path the final `HTML` file should be saved.
         /// Defaults to the same path as the `in_file`, but with the `.md` replaced with `.pdf`.
         #[arg(short, long)]
@@ -53,6 +59,7 @@ async fn main() {
             quiet,
             port,
             address,
+            open,
         } => {
             if !quiet {
                 tracing_subscriber::fmt::init();
@@ -68,6 +75,15 @@ async fn main() {
                 println!("{}", listener.local_addr().unwrap());
             } else {
                 info!("Listening on {}", listener.local_addr().unwrap());
+            }
+
+            if let Some(url) = open {
+                open::that(format!(
+                    "http://{}?path={}",
+                    listener.local_addr().unwrap(),
+                    url.as_os_str().to_str().unwrap()
+                ))
+                .unwrap();
             }
 
             axum::serve(listener, app).await.unwrap();

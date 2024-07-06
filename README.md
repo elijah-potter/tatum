@@ -14,8 +14,8 @@ cargo install --git https://github.com/elijah-potter/tatum --locked
 Next, insert the following snippet into your Neovim config:
 
 ```lua
-utils.map("n", "<leader>o", function ()
-  vim.fn.jobstart("tatum serve --open " .. vim.fn.expand('%') )
+vim.keymap.set("n", "<leader>o", function ()
+  vim.fn.jobstart({"tatum", "serve", "--open", vim.fn.expand('%')}, { noremap = true, silent = true })
 end)
 ```
 

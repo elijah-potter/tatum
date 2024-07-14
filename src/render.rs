@@ -56,8 +56,9 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
 
     let mut events: Vec<_> = parser.collect();
 
-    // Resolve image links asynchronously
+    // Handle URLs
     for event in events.iter_mut() {
+        // Resolve image links asynchronously
         if let Event::Start(Tag::Image {
             link_type: LinkType::Inline,
             dest_url,
@@ -71,11 +72,33 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
                     .await
                     .unwrap_or(generate_message_data_url("Disk error.", "red"))
                     .into()
+                // Tag::Link
             } else {
                 *dest_url = generate_message_data_url("Unable to parse image path.", "red").into();
             }
         }
+
+        // Rewrite URLs to open links
+        if let Event::Start(Tag::Link {
+            link_type: LinkType::Inline,
+            dest_url,
+            ..
+        }) = event
+        {
+            // If the link is a valid URL, leave it
+            if !dest_url.parse::<Url>().is_ok() {
+                // Otherwise, try to parse it as a file path
+                if let Ok(file_path) = dest_url.parse::<PathBuf>() {
+                    // Rewrite the URL to open correctly
+                    if let Some(file_path) = file_path.to_str() {
+                        *dest_url = format!("/?path={}", file_path).into()
+                    }
+                }
+            }
+        }
     }
+
+    // let modified_url = format!("/?path={}", dest_url.to_string());
 
     let mut body = String::new();
     pulldown_cmark::html::push_html(&mut body, events.into_iter());

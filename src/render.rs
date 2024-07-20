@@ -117,10 +117,27 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
     Ok(template.render().unwrap())
 }
 
-/// Takes a relative path and a current file, joins them and
-/// returns the absolute path of that target file.
-/// The input must be a current file, not a directory.
-/// This function does not panic, as rendering should push through
+/// Converts a relative file path to an absolute path using a reference file path.
+///
+/// This function takes a relative file path and a current absolute file path,
+/// it returns the absolute path of the target file. It does not panic.
+///
+/// Note: The `current_file` input must correspond to a file path, not a directory path.
+///
+/// # Arguments
+///
+/// * `path` - A str of the relative file path to be converted.
+/// * `current_file` - A PathBuf which holds the path to the current file.
+///
+/// # Return
+///
+/// This function returns a String that represents the absolute path of the target file.
+///
+/// ```
+/// let current_file = PathBuf::from("/home/user/Notes/slipbox/networking/dns.md");
+/// assert_eq!(rel_to_abspath("../linux.md", current_file), String::from("/home/user/Notes/slipbox/linux.md"));
+/// ```
+///
 fn rel_to_abspath(path: &str, current_file: PathBuf) -> String {
     let current_dir = current_file
         .parent()

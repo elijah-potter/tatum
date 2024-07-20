@@ -91,14 +91,19 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
                 if let Ok(file_path) = dest_url.parse::<PathBuf>() {
                     // Rewrite the URL to open correctly
                     if let Some(file_path) = file_path.to_str() {
+                        // If it's a relative path, resolve it
+                        let file_path = if PathBuf::from(file_path).is_relative() {
+                            rel_to_abspath(file_path, path.clone())
+                        } else {
+                            file_path.to_string()
+                        };
+                        // Write the URL
                         *dest_url = format!("/?path={}", file_path).into()
                     }
                 }
             }
         }
     }
-
-    // let modified_url = format!("/?path={}", dest_url.to_string());
 
     let mut body = String::new();
     pulldown_cmark::html::push_html(&mut body, events.into_iter());
@@ -110,4 +115,55 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
     };
 
     Ok(template.render().unwrap())
+}
+
+/// Takes a relative path and a current file, joins them and  and
+/// returns the absolute path of the file.
+/// This function does not panic, as rendering should push through
+fn rel_to_abspath(path: &str, current_file: PathBuf) -> String {
+    // Get the current directory
+    let mut current_dir = if current_file.is_dir() {
+        current_file
+    } else {
+        current_file
+            .parent()
+            .unwrap_or_else(|| &current_file)
+            .to_path_buf()
+    };
+
+    // Push the relative path
+    current_dir.push(path);
+
+    // Clean up the path
+    let mut clean_path = PathBuf::new();
+    for component in current_dir.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                clean_path.pop();
+            }
+            std::path::Component::CurDir => {}
+            // Push anything back on as usual
+            _ => {
+                clean_path.push(component);
+            }
+        }
+    }
+
+    clean_path.to_str().unwrap_or_else(|| path).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rel_to_abspath() {
+        assert_eq!(
+            rel_to_abspath(
+                "../linux.md",
+                PathBuf::from("/home/user/Notes/slipbox/networking/")
+            ),
+            String::from("/home/user/Notes/slipbox/linux.md")
+        );
+    }
 }

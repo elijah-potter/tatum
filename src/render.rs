@@ -117,22 +117,16 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
     Ok(template.render().unwrap())
 }
 
-/// Takes a relative path and a current file, joins them and  and
-/// returns the absolute path of the file.
+/// Takes a relative path and a current file, joins them and
+/// returns the absolute path of that target file.
+/// The input must be a current file, not a directory.
 /// This function does not panic, as rendering should push through
 fn rel_to_abspath(path: &str, current_file: PathBuf) -> String {
-    // Get the current directory
-    let mut current_dir = if current_file.is_dir() {
-        current_file
-    } else {
-        current_file
-            .parent()
-            .unwrap_or_else(|| &current_file)
-            .to_path_buf()
-    };
-
-    // Push the relative path
-    current_dir.push(path);
+    let current_dir = current_file
+        .parent()
+        .unwrap_or_else(|| &current_file)
+        .to_path_buf()
+        .join(path);
 
     // Clean up the path
     let mut clean_path = PathBuf::new();
@@ -141,11 +135,8 @@ fn rel_to_abspath(path: &str, current_file: PathBuf) -> String {
             std::path::Component::ParentDir => {
                 clean_path.pop();
             }
-            std::path::Component::CurDir => {}
-            // Push anything back on as usual
-            _ => {
-                clean_path.push(component);
-            }
+            std::path::Component::CurDir => continue,
+            _ => clean_path.push(component),
         }
     }
 
@@ -158,12 +149,21 @@ mod tests {
 
     #[test]
     fn test_rel_to_abspath() {
+        let current_file = PathBuf::from("/home/user/Notes/slipbox/networking/dns.md");
         assert_eq!(
-            rel_to_abspath(
-                "../linux.md",
-                PathBuf::from("/home/user/Notes/slipbox/networking/")
-            ),
+            rel_to_abspath("../linux.md", current_file.clone(),),
             String::from("/home/user/Notes/slipbox/linux.md")
+        );
+
+        let current_dir = current_file.parent().unwrap().to_path_buf();
+        println!("{:?} is a directory: {}", current_dir, current_dir.is_dir());
+
+        // If passed a directory, we expect a mistaken link as the function
+        // gets the directory with pop and requires the directory
+        // to exist in order to test
+        assert_eq!(
+            rel_to_abspath("../linux.md", current_dir),
+            String::from("/home/user/Notes/linux.md")
         );
     }
 }

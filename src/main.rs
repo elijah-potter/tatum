@@ -14,9 +14,7 @@ use tokio::{
     io::{AsyncWriteExt, BufWriter},
 };
 use tracing::info;
-use url::Url;
 
-/// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 enum Args {

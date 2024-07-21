@@ -91,13 +91,15 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
                 if let Ok(file_path) = dest_url.parse::<PathBuf>() {
                     // Rewrite the URL to open correctly
                     if let Some(file_path) = file_path.to_str() {
-                        // If it's a relative path, resolve it
-                        let file_path = if PathBuf::from(file_path).is_relative() {
-                            rel_to_abspath(file_path, path.clone())
+                        // If the path contains references to parent directories, resolve it
+                        let file_path = if Path::new(&file_path)
+                            .components()
+                            .any(|c| matches!(c, std::path::Component::ParentDir))
+                        {
+                            rel_to_abspath(&file_path, path.clone())
                         } else {
-                            file_path.to_string()
+                            file_path.into()
                         };
-                        // Write the URL
                         *dest_url = format!("/?path={}", file_path).into()
                     }
                 }

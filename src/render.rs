@@ -94,6 +94,7 @@ pub async fn render_doc(path: impl AsRef<Path>, use_websocket: bool) -> anyhow::
                         let file_path = if Path::new(file_path).is_relative() {
                             // If it's relative, join it to the current file
                             join_and_canonicalize(&file_path, path.clone())
+                                .unwrap_or(file_path.into())
                         } else {
                             // Otherwise, use the file path as is
                             file_path.into()
@@ -173,10 +174,13 @@ fn get_relative_path_under_cwd(file_path: PathBuf) -> Option<PathBuf> {
 /// assert_eq!(rel_to_abspath("../linux.md", current_file), String::from("/home/user/Notes/slipbox/linux.md"));
 /// ```
 ///
-fn join_and_canonicalize(path: &str, current_file: PathBuf) -> PathBuf {
+fn join_and_canonicalize(path: &str, current_file: PathBuf) -> std::io::Result<PathBuf> {
     let current_dir = current_file
         .parent()
-        .unwrap_or_else(|| &current_file)
+        .ok_or(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No parent directory",
+        ))?
         .to_path_buf()
         .join(path);
 
@@ -192,7 +196,7 @@ fn join_and_canonicalize(path: &str, current_file: PathBuf) -> PathBuf {
         }
     }
 
-    clean_path
+    Ok(clean_path)
 }
 
 /// Takes an absolute path of a file under the current working directory
@@ -277,7 +281,7 @@ mod tests {
     fn test_rel_to_abspath() {
         let current_file = PathBuf::from("/home/user/Notes/slipbox/networking/dns.md");
         assert_eq!(
-            join_and_canonicalize("../linux.md", current_file.clone(),),
+            join_and_canonicalize("../linux.md", current_file.clone()).unwrap(),
             PathBuf::from("/home/user/Notes/slipbox/linux.md")
         );
 
@@ -287,13 +291,13 @@ mod tests {
         // gets the directory with pop and requires the directory
         // to exist in order to test
         assert_eq!(
-            join_and_canonicalize("../linux.md", current_dir),
+            join_and_canonicalize("../linux.md", current_dir).unwrap(),
             PathBuf::from("/home/user/Notes/linux.md")
         );
 
         // Also preserve relative paths
         assert_eq!(
-            join_and_canonicalize("../linux.md", PathBuf::from("./networking/dns.md"),),
+            join_and_canonicalize("../linux.md", PathBuf::from("./networking/dns.md")).unwrap(),
             PathBuf::from("linux.md")
         );
     }
@@ -331,6 +335,9 @@ mod tests {
     fn test_get_relative_path_under_cwd() {
         let current_dir = std::env::current_dir().unwrap();
         let child_file = current_dir.join("child_file");
-        assert_eq!(get_relative_path_under_cwd(child_file).unwrap(), PathBuf::from("child_file"));
+        assert_eq!(
+            get_relative_path_under_cwd(child_file).unwrap(),
+            PathBuf::from("child_file")
+        );
     }
 }
